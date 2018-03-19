@@ -24,6 +24,6 @@ We propose now a minimalist thin layer to support the development of ML pipeline
 
 Visually, these are the first different modules of the proposed pipeline design pattern.
 
-[IMG]
+![alt text][img/layer.png]
 
 Ideally, a data scientist should be focused almost entirely on the *data transformations* layer, defining simple, testable functions. These functions should then be effortless *lifted* to the pipelining context, which adds the required extra functionality, respecting the desirable design properties.
