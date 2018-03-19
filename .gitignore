@@ -111,7 +111,6 @@ env.sh
 
 # spark
 spark-warehouse/
-img/
 
 # Visual Studio Code data
 .vscode/
