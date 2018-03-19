@@ -1,0 +1,8 @@
+project-meta:
+  profile: default
+  codebuild:
+    build-name: csip53-data-flow-build
+logs:
+  pipeline:
+    local: logs/pipeline.log
+    s3-bucket-name: pipeline-logs

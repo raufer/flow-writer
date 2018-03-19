@@ -1,0 +1,2 @@
+# Include the resources files
+recursive-include flow_writer/properties *
