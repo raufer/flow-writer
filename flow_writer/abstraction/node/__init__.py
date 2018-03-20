@@ -6,13 +6,13 @@ from abc import ABC, abstractmethod
 
 class Node(ABC):
     """
-    Abstract class defining an interface that supports all of the primitive operations needed for a generic dataflow node
-    A “node” is a processing element that takes inputs, does some operation and returns the results on its outputs.
+    Abstract class defining an interface that supports all of the primitive operations needed for a generic dataflow _node
+    A “_node” is a processing element that takes inputs, does some operation and returns the results on its outputs.
     It is a unit of computation. The actual computation doesn’t matter because dataflow is primarily concerned about moving data around.
 
-    The simplest dataflow node has one input port and one output port
+    The simplest dataflow _node has one input port and one output port
     It receives a computational unit 'f' that will perform the actual computation.
-    The node never has the chance to look inside into this computation.
+    The _node never has the chance to look inside into this computation.
     Nodes are often functional, but it is not required.
     """
 

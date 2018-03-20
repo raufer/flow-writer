@@ -6,10 +6,9 @@ from nose.tools import raises
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import log, length
 
-from flow_writer.abstraction import pipeline_step
+from flow_writer import node
 from tests import spark
-from flow_writer.ops.function_ops import cur
-from flow_writer.abstraction.stage import Stage
+from flow_writer import Stage
 
 
 class TestStageAbstraction(unittest.TestCase):
@@ -46,12 +45,12 @@ class TestStageAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["dvc_action", "url_length", "LengthBytes"])
 
-        @pipeline_step()
+        @node()
         def step_scale_url_length(df, mul_factor=3):
             df = df.withColumn("url_length_scaled", df.url_length * mul_factor)
             return df
 
-        @pipeline_step()
+        @node()
         def step_filter_small_packets(df, column, threshold):
             df = df.filter(df[column] >= threshold)
             return df
@@ -88,15 +87,15 @@ class TestStageAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(StringType()))
 
-        @pipeline_step()
+        @node()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -134,11 +133,11 @@ class TestStageAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(StringType()))
 
@@ -165,15 +164,15 @@ class TestStageAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(StringType()))
 
-        @pipeline_step()
+        @node()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -200,15 +199,15 @@ class TestStageAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(StringType()))
 
-        @pipeline_step()
+        @node()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -245,22 +244,22 @@ class TestStageAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age", "score"])
 
-        @pipeline_step()
+        @node()
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @pipeline_step()
+        @node()
         def step_transform(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 
@@ -306,15 +305,15 @@ class TestStageAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(StringType()))
 
-        @pipeline_step()
+        @node()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 

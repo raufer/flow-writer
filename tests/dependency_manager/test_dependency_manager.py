@@ -3,9 +3,9 @@ import os
 import shutil
 import pandas as pd
 
-from flow_writer.abstraction.pipeline import Pipeline
-from flow_writer.abstraction.stage import Stage
-from flow_writer.abstraction import pipeline_step
+from flow_writer import Pipeline
+from flow_writer import Stage
+from flow_writer import node
 from flow_writer.dependency_manager import DependencyEntry, dependency_manager
 from flow_writer.ops.function_ops import lazy
 
@@ -84,18 +84,18 @@ class TestDependencyDecorator(unittest.TestCase):
             }
 
         @dependency_manager({"tokenizer": [f, g]})
-        @pipeline_step()
+        @node()
         def step_tokenize(df, col, tokenizer=None):
             if not tokenizer:
                 tokenizer = df.name.unique().tolist()
             df.loc[:, 'tokenizer'] = df.apply(lambda r: tokenizer.index(r[col]), axis=1)
             return df, tokenizer
 
-        @pipeline_step()
+        @node()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
-        @pipeline_step()
+        @node()
         def step_normalize(df, col, normalizer=None):
             if not normalizer:
                 normalizer = (df.score.max(), df.score.min())
@@ -103,7 +103,7 @@ class TestDependencyDecorator(unittest.TestCase):
                                                axis=1)
             return df, normalizer
 
-        @pipeline_step()
+        @node()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -169,18 +169,18 @@ class TestDependencyDecorator(unittest.TestCase):
             }
 
         @dependency_manager({"tokenizer": [f, g]})
-        @pipeline_step()
+        @node()
         def step_tokenize(df, col, tokenizer=None):
             if not tokenizer:
                 tokenizer = df.name.unique().tolist()
             df.loc[:, 'tokenizer'] = df.apply(lambda r: tokenizer.index(r[col]), axis=1)
             return df, tokenizer
 
-        @pipeline_step()
+        @node()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df.loc[df['age'] > threshold, :]) # avoid warnings for views assignment
 
-        @pipeline_step()
+        @node()
         def step_normalize(df, col, normalizer=None):
             if not normalizer:
                 normalizer = (df.score.max(), df.score.min())
@@ -188,7 +188,7 @@ class TestDependencyDecorator(unittest.TestCase):
                                                axis=1)
             return df, normalizer
 
-        @pipeline_step()
+        @node()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -260,18 +260,18 @@ class TestDependencyDecorator(unittest.TestCase):
         values = ["Joe", "Sue", "Jay", "Ali", "Bob", "Leo"]
 
         @dependency_manager({"tokenizer": [f(values), g]})
-        @pipeline_step()
+        @node()
         def step_tokenize(df, col, tokenizer=None):
             if not tokenizer:
                 tokenizer = df.name.unique().tolist()
             df.loc[:, 'tokenizer'] = df.apply(lambda r: tokenizer.index(r[col]), axis=1)
             return df, tokenizer
 
-        @pipeline_step()
+        @node()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
-        @pipeline_step()
+        @node()
         def step_normalize(df, col, normalizer=None):
             if not normalizer:
                 normalizer = (df.score.max(), df.score.min())
@@ -279,7 +279,7 @@ class TestDependencyDecorator(unittest.TestCase):
                                                axis=1)
             return df, normalizer
 
-        @pipeline_step()
+        @node()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df

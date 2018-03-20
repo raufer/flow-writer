@@ -375,7 +375,7 @@ def _parse_input_nodes(l):
 
 def _parse_path(path):
     """
-    Splits the directory like node 'path' into the different components
+    Splits the directory like _node 'path' into the different components
     Returns a dict with all of the found components populated
     """
     if '/' in path:
@@ -394,12 +394,12 @@ def _parse_path(path):
 
 
 def _prerun(pipeline, stage, df):
-    """Hook to run generic code immediately before the execution of each node"""
+    """Hook to run generic code immediately before the execution of each _node"""
     for f in pipeline.registry.get('before_each_stage', []):
         _call_with_requested_args(f, pipeline=pipeline, stage=stage, df=df)
 
 
 def _postrun(pipeline, stage, df):
-    """Hook to run generic code immediately after the execution of each node"""
+    """Hook to run generic code immediately after the execution of each _node"""
     for f in pipeline.registry.get('after_each_stage', []):
         _call_with_requested_args(f, pipeline=pipeline, stage=stage, df=df)

@@ -7,11 +7,11 @@ DependencyEntry = namedtuple("DependencyEntry", ["sink", "source", "arg"])
 
 def dependency_manager(dict_):
     """
-    Decorator to handle the caching/persistence of certain arguments of a node.
+    Decorator to handle the caching/persistence of certain arguments of a _node.
     'f' and 'g' are two functions that have the responsibility of performing (load/save)-like operations.
 
-    In the dataflow context, 'f' will be a source node, generating some data structure to be injected in the underlying function.
-    'g' will be a sink node, receiving the return of the its associated step. The dataflow context will not capture any possible returns of this function.
+    In the dataflow context, 'f' will be a source _node, generating some data structure to be injected in the underlying function.
+    'g' will be a sink _node, receiving the return of the its associated step. The dataflow context will not capture any possible returns of this function.
 
     usage:
     >>> dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}

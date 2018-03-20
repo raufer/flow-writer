@@ -3,7 +3,7 @@ from typing import Callable
 from functools import wraps, partial
 
 from flow_writer.dependency_manager import dependency_manager
-from flow_writer.ops.function_ops import cur, curr, signature_args
+from flow_writer.ops.function_ops import signature_args, curry
 from flow_writer.validation import validate_input_signal
 
 
@@ -18,7 +18,7 @@ def _extended_wraps(func, wrapper):
     return new_func
 
 
-def pipeline_step(val=None, dm=None, allow_rebinding=True) -> Callable:
+def _node(val=None, dm=None) -> Callable:
     """
     Decorator to signal the fact that 'func' is to be used as a step in a data abstraction.
     It returns a curried version of it, which will be run when the curried version is passed
@@ -33,17 +33,17 @@ def pipeline_step(val=None, dm=None, allow_rebinding=True) -> Callable:
     By default rebinding of arguments is allowed, but can be controlled with the 'allow_rebind' flag
 
     usage:
-    >>> @pipeline_step()
+    >>> @node()
     >>> def step(df: Signal, *pars) -> Signal
 
     >>> def has_age_col(df):
     >>>		return 'age' in df.columns
-    >>> @pipeline_step(val=has_age_col)
+    >>> @node(val=has_age_col)
     >>> def step(df: Signal, *pars) -> Signal
 
     >>> dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}
     >>>
-    >>> @pipeline_step(dm=dependencies)
+    >>> @node(dm=dependencies)
     >>> def step(df, tokenizer)
     """
 
@@ -56,12 +56,9 @@ def pipeline_step(val=None, dm=None, allow_rebinding=True) -> Callable:
         def wrapper(*args, **kwargs):
             #  add hooks to be called at execution time
             #  one for input signal validations
-            kwargs['__hook_input_validation'] = partial(validate_input_signal, val or [])
+            # kwargs['__hook_input_validation'] = partial(validate_input_signal, val or [])
             new_func = _extended_wraps(func, wrapper)
-            if allow_rebinding:
-                return curr(new_func)(*args, **kwargs)
-            else:
-                return cur(new_func)(*args, **kwargs)
+            return curry(new_func)(*args, **kwargs)
 
         return wrapper
 

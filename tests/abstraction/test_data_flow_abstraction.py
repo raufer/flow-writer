@@ -2,10 +2,9 @@ import unittest
 
 from nose.tools import raises
 
-from flow_writer.abstraction.pipeline import Pipeline
-from flow_writer.abstraction.stage import Stage
-from flow_writer.ops.function_ops import cur, curr, closed_bindings, get_closed_variables
-from flow_writer.abstraction import pipeline_step
+from flow_writer import Pipeline
+from flow_writer import Stage
+from flow_writer import node
 
 
 class TestDataFlowAbstraction(unittest.TestCase):
@@ -28,23 +27,23 @@ class TestDataFlowAbstraction(unittest.TestCase):
         """
         'copy_dataflow' should extract the necessary fields to inject in the newly created derived flow_writer
         """
-        @pipeline_step()
+        @node()
         def step_a(df, tokenize):
             return df
 
-        @pipeline_step()
+        @node()
         def step_b(df, interpolate):
             return df
 
-        @pipeline_step()
+        @node()
         def step_c(df, groupby):
             return df
 
-        @pipeline_step()
+        @node()
         def step_d(df, keep_source, threshold):
             return df
 
-        @pipeline_step()
+        @node()
         def step_e(df, lookup):
             return df
 
@@ -78,23 +77,23 @@ class TestDataFlowAbstraction(unittest.TestCase):
         'copy_dataflow' should extract the necessary fields to inject in the newly created derived flow_writer
         The side effects should also be coppied
         """
-        @pipeline_step()
+        @node()
         def step_a(df, tokenize):
             return df
 
-        @pipeline_step()
+        @node()
         def step_b(df, interpolate):
             return df
 
-        @pipeline_step()
+        @node()
         def step_c(df, groupby):
             return df
 
-        @pipeline_step()
+        @node()
         def step_d(df, keep_source, threshold):
             return df
 
-        @pipeline_step()
+        @node()
         def step_e(df, lookup):
             return df
 
@@ -119,7 +118,7 @@ class TestDataFlowAbstraction(unittest.TestCase):
 
         pipeline = pipeline.with_description('This is a description')
 
-        @pipeline_step()
+        @node()
         def write(df, path):
             return df
 

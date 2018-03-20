@@ -296,13 +296,13 @@ def _run_sinks(sinks, **kwargs):
 
 
 def _before_each_iteration(stage, step, df):
-    """Callback to run generic code immediately before the execution of each node"""
+    """Callback to run generic code immediately before the execution of each _node"""
     for f in stage.registry.get('before_each_step', []):
         _call_with_requested_args(f, stage=stage, step=step, df=df)
 
 
 def _after_each_iteration(stage, step, df):
-    """Callback to run generic code immediately after the execution of each node"""
+    """Callback to run generic code immediately after the execution of each _node"""
     for f in stage.registry.get('after_each_step', []):
         _call_with_requested_args(f, stage=stage, step=step, df=df)
 

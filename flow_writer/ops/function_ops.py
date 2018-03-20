@@ -44,20 +44,20 @@ def curry(func):
     defaultargs = default_args(func)
 
     @wraps(func)
-    def f(*args, **state):
+    def f(*args, **kwargs):
 
-        state = {**defaultargs, **state}
+        kwargs = {**defaultargs, **kwargs}
 
-        if sum(map(len, [args, state])) >= len(signature):
-            return func(*args, **state if len(args) < len(signature) else {})
+        if sum(map(len, [args, kwargs])) >= len(signature):
+            return func(*args, **kwargs if len(args) < len(signature) else {})
 
         @wraps(func)
         def g(*callargs, **callkwargs):
 
-            args_to_kwargs = {k: v for k, v in zip(_expected(func, state), args + callargs)}
+            args_to_kwargs = {k: v for k, v in zip(_expected(func, kwargs), args + callargs)}
 
             newstate = {
-                **state,
+                **kwargs,
                 **args_to_kwargs,
                 **callkwargs
             }
@@ -132,9 +132,9 @@ def closed_bindings(f):
 
     closed_vars = get_closed_variables(f)
 
-    args_closedvars = dict(zip(f_args, closed_vars.get('myArgs', {})))
+    args_closedvars = dict(zip(f_args, closed_vars.get('args', {})))
 
-    kw_closedvars = closed_vars.get('myKwArgs', {})
+    kw_closedvars = closed_vars.get('kwargs', {})
 
     return {**defaultargs, **args_closedvars, **kw_closedvars}
 

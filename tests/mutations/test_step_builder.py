@@ -2,9 +2,9 @@ import unittest
 
 from pyspark.sql.functions import length, log, lit
 
-from flow_writer.abstraction import pipeline_step
-from flow_writer.abstraction.pipeline import Pipeline
-from flow_writer.abstraction.stage import Stage
+from flow_writer import node
+from flow_writer import Pipeline
+from flow_writer import Stage
 
 from tests import spark as spark
 
@@ -40,19 +40,19 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "score"])
 
-        @pipeline_step()
+        @node()
         def step_one(df):
             return df.withColumn('score', df.score + 1)
 
-        @pipeline_step()
+        @node()
         def step_two(df):
             return df.withColumn('score', df.score + 1)
 
-        @pipeline_step()
+        @node()
         def step_three(df):
             return df.withColumn('score', df.score + 1)
 
-        @pipeline_step()
+        @node()
         def step_four(df):
             return df.withColumn('score', df.score + 1)
 
@@ -74,7 +74,7 @@ class TestFlowSideEffects(unittest.TestCase):
         df_run = pipeline.run(df)
         self.assertEqual([r.score for r in df_run.collect()], [4]*len(data))
 
-        @pipeline_step()
+        @node()
         def step_five(df):
             return df.withColumn('score', df.score + 100)
 
@@ -89,7 +89,7 @@ class TestFlowSideEffects(unittest.TestCase):
         df_run = pipeline_.run_stage('stage three', df)
         self.assertEqual(df_run.first().score, 101)
 
-        @pipeline_step()
+        @node()
         def step_nullify(df):
             return df.withColumn('score', lit(0))
 

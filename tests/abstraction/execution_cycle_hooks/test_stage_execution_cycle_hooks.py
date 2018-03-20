@@ -1,9 +1,9 @@
 import unittest
 import pyspark.sql.types as T
 
-from flow_writer.abstraction import pipeline_step
+from flow_writer import node
 from tests import spark as spark
-from flow_writer.abstraction.stage import Stage
+from flow_writer import Stage
 
 
 class TestStageExecCycle(unittest.TestCase):
@@ -36,15 +36,15 @@ class TestStageExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @pipeline_step()
+        @node()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -88,15 +88,15 @@ class TestStageExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @pipeline_step()
+        @node()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -140,15 +140,15 @@ class TestStageExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @pipeline_step()
+        @node()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @pipeline_step()
+        @node()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @pipeline_step()
+        @node()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 

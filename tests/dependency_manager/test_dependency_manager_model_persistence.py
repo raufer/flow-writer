@@ -4,9 +4,9 @@ import os
 import shutil
 import pandas as pd
 
-from flow_writer.abstraction.pipeline import Pipeline
-from flow_writer.abstraction.stage import Stage
-from flow_writer.abstraction import pipeline_step
+from flow_writer import Pipeline
+from flow_writer import Stage
+from flow_writer import node
 from flow_writer.dependency_manager import DependencyEntry, dependency_manager
 from flow_writer.ops.function_ops import lazy
 
@@ -61,14 +61,14 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
         dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}
 
         @dependency_manager(dependencies)
-        @pipeline_step()
+        @node()
         def step_tokenize(df, col, tokenizer=None):
             if not tokenizer:
                 tokenizer = df.name.unique().tolist()
             df.loc[:, 'tokenizer'] = df.apply(lambda r: tokenizer.index(r[col]), axis=1)
             return df, tokenizer
 
-        @pipeline_step()
+        @node()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
@@ -86,7 +86,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
         dependencies = {"normalizer": [loader(normalizer_path), writer(normalizer_path)]}
 
         @dependency_manager(dependencies)
-        @pipeline_step()
+        @node()
         def step_normalize(df, col, normalizer=None):
             if not normalizer:
                 normalizer = (df.score.max(), df.score.min())
@@ -98,7 +98,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
 
             return df, normalizer
 
-        @pipeline_step()
+        @node()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -165,14 +165,14 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
         dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}
 
         @dependency_manager(dependencies)
-        @pipeline_step()
+        @node()
         def step_tokenize(df, col, tokenizer=None):
             if not tokenizer:
                 tokenizer = df.name.unique().tolist()
             df.loc[:, 'tokenizer'] = df.apply(lambda r: tokenizer.index(r[col]), axis=1)
             return df, tokenizer
 
-        @pipeline_step()
+        @node()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
@@ -190,7 +190,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
         dependencies = {"normalizer": [loader(normalizer_path), writer(normalizer_path)]}
 
         @dependency_manager(dependencies)
-        @pipeline_step()
+        @node()
         def step_normalize(df, col, normalizer=None):
             if not normalizer:
                 normalizer = (df.score.max(), df.score.min())
@@ -202,7 +202,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
 
             return df, normalizer
 
-        @pipeline_step()
+        @node()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -273,7 +273,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
         }
 
         @dependency_manager(dependencies)
-        @pipeline_step()
+        @node()
         def step_tokenize(df, col, tokenizer=None, ones=None):
 
             if not tokenizer:
@@ -287,7 +287,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
 
             return df, tokenizer, ones
 
-        @pipeline_step()
+        @node()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
@@ -306,7 +306,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
         }
 
         @dependency_manager(dependencies)
-        @pipeline_step()
+        @node()
         def step_normalize(df, col, normalizer=None, twos=None):
 
             if not normalizer:
@@ -323,7 +323,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
 
             return df, normalizer, twos
 
-        @pipeline_step()
+        @node()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -380,7 +380,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
     def test_dependencies_manager_writer_args_order_invariance(self):
         """
         The order by which the 'writer' should not have impact on the output.
-        ie. both definitions 'def writer(model, df)' and 'def write(df, model)' should be equivalent at sink-node call time
+        ie. both definitions 'def writer(model, df)' and 'def write(df, model)' should be equivalent at sink-_node call time
         """
         data = [
             ("Bob", 25, 19),
@@ -393,7 +393,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
 
         df = pd.DataFrame(data, columns=["name", "age", "score"])
 
-        @pipeline_step()
+        @node()
         def step_tokenize(df, col, tokenizer=None, ones=None):
 
             if not tokenizer:
@@ -407,7 +407,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
 
             return df, tokenizer, ones
 
-        @pipeline_step()
+        @node()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
@@ -431,7 +431,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
         }
 
         @dependency_manager(dependencies)
-        @pipeline_step()
+        @node()
         def step_normalize(df, col, normalizer=None, twos=None):
 
             if not normalizer:
@@ -448,7 +448,7 @@ class TestDependencyManagerModelPersistence(unittest.TestCase):
 
             return df, normalizer, twos
 
-        @pipeline_step()
+        @node()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df

@@ -2,8 +2,7 @@ import unittest
 
 from nose.tools import raises
 
-from flow_writer.ops.function_ops import cur, curr, closed_bindings, get_closed_variables
-from flow_writer.abstraction import pipeline_step
+from flow_writer import node
 
 
 class TestFlowOps(unittest.TestCase):
@@ -28,7 +27,7 @@ class TestFlowOps(unittest.TestCase):
         It should trigger as soon as all the elements are available.
         """
 
-        @pipeline_step()
+        @node()
         def power_of(base, exponent, add_at_end=0):
             return base ** exponent + add_at_end
 
@@ -45,7 +44,7 @@ class TestFlowOps(unittest.TestCase):
         apply to the callable structure such as '__doc__' or '__name__'
         """
 
-        @pipeline_step()
+        @node()
         def power_of(base, exponent, add_at_end=0):
             """doc: power of two"""
             return base ** exponent + add_at_end
@@ -54,18 +53,3 @@ class TestFlowOps(unittest.TestCase):
 
         self.assertEqual(power_of_two.__name__, power_of.__name__)
         self.assertEqual(power_of_two.__doc__, power_of.__doc__)
-
-    @raises(ValueError)
-    def test_rebinding_arguments_not_allowed(self):
-        """
-        If arguments rebinding is not support an exception should be thrown when kws are repeated
-        """
-
-        @pipeline_step(allow_rebinding=False)
-        def power_of(base, exponent, add_at_end=0):
-            """doc: power of two"""
-            return base ** exponent + add_at_end
-
-        power_of_two = power_of(exponent=2)
-
-        power_of_two(exponent=3)

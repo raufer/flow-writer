@@ -33,7 +33,7 @@ def validate_input_signal(validations, kwargs, fobj):
         msg = {
             "message": "Signal failed the validation check",
             "failed validation": "'{}', nth validation '{}'".format(val_name, val_pos),
-            "at node": "step '{}'".format(step_name)
+            "at _node": "step '{}'".format(step_name)
         }
 
         print('\n' + json.dumps(msg, indent=4))
@@ -41,5 +41,5 @@ def validate_input_signal(validations, kwargs, fobj):
         raise SignalNotValid({
             "message": "Signal failed the validation check",
             "failed validation": "'{}', nth validation '{}'".format(val_name, val_pos),
-            "at node": "step '{}'".format(step_name)
+            "at _node": "step '{}'".format(step_name)
         })

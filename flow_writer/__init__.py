@@ -3,7 +3,7 @@ import yaml
 import sys
 import os
 
-from flow_writer.abstraction import node
+from flow_writer.abstraction import _node as node
 from flow_writer.abstraction.stage import Stage
 from flow_writer.abstraction.pipeline import Pipeline
 
