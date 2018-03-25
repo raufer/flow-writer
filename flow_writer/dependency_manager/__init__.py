@@ -13,6 +13,9 @@ def dependency_manager(dict_):
     In the dataflow context, 'f' will be a source _node, generating some data structure to be injected in the underlying function.
     'g' will be a sink _node, receiving the return of the its associated step. The dataflow context will not capture any possible returns of this function.
 
+    Since the user is passing a dictionary to configure the callbacks for each named argument, we order the list
+    of dependencies managed by their index of occurrence on the function's signature
+
     usage:
     >>> dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}
     >>>
@@ -21,11 +24,16 @@ def dependency_manager(dict_):
     """
 
     def decorator(func):
-        dependency_entries = [DependencyEntry(source=value[0], sink=value[1], arg=key) for key, value in dict_.items()]
+        signature = signature_args(func)
+        dependency_entries = sorted(
+            [DependencyEntry(source=value[0], sink=value[1], arg=key) for key, value in dict_.items()],
+            key=lambda dependency: signature.index(dependency.arg)
+        )
 
-        func.registry = {
-            'dependencies': dependency_entries
-        }
+        if hasattr(func, "registry"):
+            func.registry['dependencies'] = dependency_entries
+        else:
+            func.registry = {'dependencies': dependency_entries}
 
         return func
 

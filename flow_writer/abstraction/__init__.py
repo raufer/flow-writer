@@ -49,6 +49,10 @@ def _node(val=None, dm=None) -> Callable:
 
     def decorator(func):
 
+        func = _initialize_registry(func)
+
+        func = _register_input_validation(func, val)
+
         if dm:
             func = dependency_manager(dm)(func)
 
@@ -70,3 +74,27 @@ def _call_with_requested_args(f, **kws):
     args_requested = signature_args(f)
     fkws = {arg: kws[arg] for arg in args_requested if arg in kws}
     f(**fkws)
+
+
+def _initialize_registry(func):
+    """
+    Initializes a registry attribute on the callable 'func'
+    This is useful to store callbacks that will be executed at
+    different moments during the execution workflow
+    """
+    g = deepcopy(func)
+    if not hasattr(g, 'registry'):
+        g.registry = {}
+    return g
+
+
+def _register_input_validation(func, validations):
+    """
+    Registers user defined callbacks 'validations' that serve as constraints that
+    the input signal must respect.
+    In case any of the constraints is violated, an exception is raised
+    """
+    g = deepcopy(func)
+    g.registry['input_validation'] = partial(validate_input_signal, validations or [])
+    return g
+

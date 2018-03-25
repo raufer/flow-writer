@@ -15,6 +15,8 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
     @classmethod
     def setup_class(cls):
         cls.path = os.path.join('.temp', 'data')
+        if os.path.exists(os.path.dirname(cls.path)):
+            shutil.rmtree(os.path.dirname(cls.path))
 
     @classmethod
     def teardown_class(cls):
