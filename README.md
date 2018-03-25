@@ -1,5 +1,5 @@
 ## Flow Writer
-
+[![Build Status](https://travis-ci.org/raufer/flow-writer.svg?branch=master)](https://travis-ci.org/raufer/flow-writer)
 ### Proof of concept for constructing ML pipelines
 
 This repository serves as first trial for a proof of concept for what I believe to be a proper way of designing and managing machine learning pipelines.
