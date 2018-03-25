@@ -9,12 +9,10 @@ name = "pypi"
 
 pyyaml = "*"
 colorama = "*"
-pawscli = "*"
 termcolor = "*"
 
 
 [dev-packages]
-
 numpy = "*"
 pandas = "*"
 pyspark = "*"

@@ -9,4 +9,5 @@ install:
   - "pipenv install --dev"
 
 script:
+  - echo "Running unit tests"
   - "pipenv run nosetests -s -v tests/"
