@@ -301,7 +301,6 @@ def _before_each_iteration(stage, step, df):
 
     Additionally any input signal validations are also invoked
     """
-    print('FUNC REGISTRY', step.f.registry)
     validate_signal = step.f.registry.get('input_validation')
     validate_signal(df=df, f=step.f)
 
