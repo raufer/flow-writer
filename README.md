@@ -5,7 +5,7 @@
 This repository serves as first trial for a proof of concept for what I believe to be a proper way of designing and managing machine learning pipelines.
 The proposed design pattern is framework agnostic makes and extensive use of *dataflow programming* as well as *currying*.
 
-[This blog post](https://raufer.github.io/2018-02-08-poc-dataflow-for-ml/) discusses the motivation behind the work with great detail and provides examples of usage.
+[This blog post](https://raufer.github.io/2018/02/08/poc-dataflow-for-ml/) discusses the motivation behind the work with great detail and provides examples of usage.
 
 Keeping data transformations in their natural form, as functions, results in a cleaner way of creating workflows.
 
