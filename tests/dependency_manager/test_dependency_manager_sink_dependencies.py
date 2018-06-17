@@ -4,19 +4,18 @@ import os
 import shutil
 import pandas as pd
 
-from flow_writer import Pipeline
-from flow_writer import Stage
-from flow_writer import node
+from flow_writer.abstraction.pipeline import Pipeline
+from flow_writer.abstraction.stage import Stage
+from flow_writer.abstraction import pipeline_step
+from flow_writer.dependency_manager import DependencyEntry, dependency_manager
 from flow_writer.ops.function_ops import lazy
 
 
-class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
+class TestDependencyManagerSinkDependencies(unittest.TestCase):
 
     @classmethod
     def setup_class(cls):
         cls.path = os.path.join('.temp', 'data')
-        if os.path.exists(os.path.dirname(cls.path)):
-            shutil.rmtree(os.path.dirname(cls.path))
 
     @classmethod
     def teardown_class(cls):
@@ -33,9 +32,7 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
     def test_dependency_decorator_model_persistence(self):
         """
-        The step dependency manager decorator should serve the usecase of model persistence.
-        In estimating mode, we should train the models, capture them, and persist them on disk.
-        In production mode, the load functions should run, restore the models and inject those dependencies into the appropriate steps.
+        'pipeline.run_with_sinks/fit(df, data)' should accept a dict to resolve the pipeline's placeholders
         """
         data = [
             ("Bob", 25, 19),
@@ -48,44 +45,40 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
         df = pd.DataFrame(data, columns=["name", "age", "score"])
 
-        @lazy
         def loader(path):
             with open(path, 'rb') as f:
                 return pickle.load(f)
 
-        @lazy
         def writer(path, tokenizer):
             with open(path, 'wb') as f:
                 pickle.dump(tokenizer, f)
 
-        tokenizer_path = os.path.join(self.path, 'tokenizer.pickle')
-        dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}
+        dependencies = {"tokenizer": [loader, writer]}
 
-        @node(dm=dependencies)
+        @dependency_manager(dependencies)
+        @pipeline_step()
         def step_tokenize(df, col, tokenizer=None):
             if not tokenizer:
                 tokenizer = df.name.unique().tolist()
             df.loc[:, 'tokenizer'] = df.apply(lambda r: tokenizer.index(r[col]), axis=1)
             return df, tokenizer
 
-        @node()
+        @pipeline_step()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
-        @lazy
         def loader(path):
             with open(path, 'rb') as f:
                 return pickle.load(f)
 
-        @lazy
         def writer(path, normalizer):
             with open(path, 'wb') as f:
                 pickle.dump(normalizer, f)
 
-        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
-        dependencies = {"normalizer": [loader(normalizer_path), writer(normalizer_path)]}
+        dependencies = {"normalizer": [loader, writer]}
 
-        @node(dm=dependencies)
+        @dependency_manager(dependencies)
+        @pipeline_step()
         def step_normalize(df, col, normalizer=None):
             if not normalizer:
                 normalizer = (df.score.max(), df.score.min())
@@ -97,7 +90,7 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
             return df, normalizer
 
-        @node()
+        @pipeline_step()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -123,8 +116,16 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
             [len(d[0]) for d in data if d[1] > 18]
         )
 
+        tokenizer_path = os.path.join(self.path, 'tokenizer.pickle')
+        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
+
+        data_ = {
+            'first-stage/step_tokenize/tokenizer/writer/path': tokenizer_path,
+            'second-stage/step_normalize/normalizer/writer/path': normalizer_path
+        }
+
         #  profile estimator
-        df_estimator = pipeline.run_with_sinks(df)
+        df_estimator = pipeline.run_with_sinks(df, data_)
 
         self.assertListEqual(df_estimator.values.tolist(), df_run.values.tolist())
 
@@ -136,8 +137,7 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
     def test_dependency_decorator_model_persistence_fit_alias(self):
         """
-        'pipeline.fit()' should be an alias to 'pipeline.run_with_sinks'
-        This is useful to give more semantics to ML use cases
+        'pipeline.fit(df, data)' should accept a dict to resolve the pipeline's placeholders
         """
         data = [
             ("Bob", 25, 19),
@@ -150,44 +150,40 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
         df = pd.DataFrame(data, columns=["name", "age", "score"])
 
-        @lazy
         def loader(path):
             with open(path, 'rb') as f:
                 return pickle.load(f)
 
-        @lazy
         def writer(path, tokenizer):
             with open(path, 'wb') as f:
                 pickle.dump(tokenizer, f)
 
-        tokenizer_path = os.path.join(self.path, 'tokenizer.pickle')
-        dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}
+        dependencies = {"tokenizer": [loader, writer]}
 
-        @node(dm=dependencies)
+        @dependency_manager(dependencies)
+        @pipeline_step()
         def step_tokenize(df, col, tokenizer=None):
             if not tokenizer:
                 tokenizer = df.name.unique().tolist()
             df.loc[:, 'tokenizer'] = df.apply(lambda r: tokenizer.index(r[col]), axis=1)
             return df, tokenizer
 
-        @node()
+        @pipeline_step()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
-        @lazy
         def loader(path):
             with open(path, 'rb') as f:
                 return pickle.load(f)
 
-        @lazy
         def writer(path, normalizer):
             with open(path, 'wb') as f:
                 pickle.dump(normalizer, f)
 
-        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
-        dependencies = {"normalizer": [loader(normalizer_path), writer(normalizer_path)]}
+        dependencies = {"normalizer": [loader, writer]}
 
-        @node(dm=dependencies)
+        @dependency_manager(dependencies)
+        @pipeline_step()
         def step_normalize(df, col, normalizer=None):
             if not normalizer:
                 normalizer = (df.score.max(), df.score.min())
@@ -199,7 +195,7 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
             return df, normalizer
 
-        @node()
+        @pipeline_step()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -225,10 +221,17 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
             [len(d[0]) for d in data if d[1] > 18]
         )
 
-        #  profile estimator
-        df_fit = pipeline.fit(df)
+        tokenizer_path = os.path.join(self.path, 'tokenizer.pickle')
+        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
 
-        self.assertListEqual(df_fit.values.tolist(), df_run.values.tolist())
+        data_ = {
+            'first-stage/step_tokenize/tokenizer/writer/path': tokenizer_path,
+            'second-stage/step_normalize/normalizer/writer/path': normalizer_path
+        }
+
+        df_estimator = pipeline.fit(df, data_)
+
+        self.assertListEqual(df_estimator.values.tolist(), df_run.values.tolist())
 
         with open(tokenizer_path, "rb") as f:
             self.assertListEqual(pickle.load(f), [d[0] for d in data])
@@ -238,7 +241,8 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
     def test_dependencies_manager_more_than_one_dependency(self):
         """
-        The dependency manager should allow for possibly more than one dependency in each step
+        'pipeline.fit(df, data)' should accept a dict to resolve the pipeline's placeholders
+        More than one dependency per step is allowed
         """
         data = [
             ("Bob", 25, 19),
@@ -251,25 +255,21 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
         df = pd.DataFrame(data, columns=["name", "age", "score"])
 
-        @lazy
         def loader(path):
             with open(path, 'rb') as f:
                 return pickle.load(f)
 
-        @lazy
         def writer(path, model):
             with open(path, 'wb') as f:
                 pickle.dump(model, f)
 
-        tokenizer_path = os.path.join(self.path, 'tokenizer.pickle')
-        ones_path = os.path.join(self.path, 'ones.pickle')
-
         dependencies = {
-            "tokenizer": [loader(tokenizer_path), writer(tokenizer_path)],
-            "ones": [loader(ones_path), writer(ones_path)]
+            "tokenizer": [loader, writer],
+            "ones": [loader, writer]
         }
 
-        @node(dm=dependencies)
+        @dependency_manager(dependencies)
+        @pipeline_step()
         def step_tokenize(df, col, tokenizer=None, ones=None):
 
             if not tokenizer:
@@ -283,25 +283,22 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
             return df, tokenizer, ones
 
-        @node()
+        @pipeline_step()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
-        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
-        twos_path = os.path.join(self.path, 'twos.pickle')
-
-        @lazy
         def writer(path, df, model):
             model = [m + df.shape[0] for m in model]
             with open(path, 'wb') as f:
                 pickle.dump(model, f)
 
         dependencies = {
-            "normalizer": [loader(normalizer_path), writer(normalizer_path)],
-            "twos": [loader(twos_path), writer(twos_path)]
+            "normalizer": [loader, writer],
+            "twos": [loader, writer]
         }
 
-        @node(dm=dependencies)
+        @dependency_manager(dependencies)
+        @pipeline_step()
         def step_normalize(df, col, normalizer=None, twos=None):
 
             if not normalizer:
@@ -318,7 +315,7 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
             return df, normalizer, twos
 
-        @node()
+        @pipeline_step()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -344,8 +341,19 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
             [len(d[0]) for d in data if d[1] > 18]
         )
 
-        #  profile estimator
-        df_fit = pipeline.fit(df)
+        tokenizer_path = os.path.join(self.path, 'tokenizer.pickle')
+        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
+        ones_path = os.path.join(self.path, 'ones.pickle')
+        twos_path = os.path.join(self.path, 'twos.pickle')
+
+        data_ = {
+            'first-stage/step_tokenize/tokenizer/writer/path': tokenizer_path,
+            'first-stage/step_tokenize/ones/writer/path': ones_path,
+            'second-stage/step_normalize/normalizer/writer/path': normalizer_path,
+            'second-stage/step_normalize/twos/writer/path': twos_path
+        }
+
+        df_fit = pipeline.fit(df, data_)
 
         self.assertListEqual(df_fit.values.tolist(), df_run.values.tolist())
 
@@ -374,8 +382,9 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
     def test_dependencies_manager_writer_args_order_invariance(self):
         """
+        'pipeline.fit(df, data)' should accept a dict to resolve the pipeline's placeholders
         The order by which the 'writer' should not have impact on the output.
-        ie. both definitions 'def writer(model, df)' and 'def write(df, model)' should be equivalent at sink-_node call time
+        ie. both definitions 'def writer(model, df)' and 'def write(df, model)' should be equivalent at sink-node call time
         """
         data = [
             ("Bob", 25, 19),
@@ -388,7 +397,7 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
         df = pd.DataFrame(data, columns=["name", "age", "score"])
 
-        @node()
+        @pipeline_step()
         def step_tokenize(df, col, tokenizer=None, ones=None):
 
             if not tokenizer:
@@ -402,30 +411,26 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
             return df, tokenizer, ones
 
-        @node()
+        @pipeline_step()
         def step_filter_by_age(df, threshold):
             return pd.DataFrame(df[df['age'] > threshold])
 
-        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
-        twos_path = os.path.join(self.path, 'twos.pickle')
-
-        @lazy
         def loader(path):
             with open(path, 'rb') as f:
                 return pickle.load(f)
 
-        @lazy
         def writer(path, model, df):
             model = [m + df.shape[0] for m in model]
             with open(path, 'wb') as f:
                 pickle.dump(model, f)
 
         dependencies = {
-            "normalizer": [loader(normalizer_path), writer(normalizer_path)],
-            "twos": [loader(twos_path), writer(twos_path)]
+            "normalizer": [loader, writer],
+            "twos": [loader, writer]
         }
 
-        @node(dm=dependencies)
+        @dependency_manager(dependencies)
+        @pipeline_step()
         def step_normalize(df, col, normalizer=None, twos=None):
 
             if not normalizer:
@@ -442,7 +447,7 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
 
             return df, normalizer, twos
 
-        @node()
+        @pipeline_step()
         def step_name_length(df):
             df.loc[:, 'name_length'] = df.apply(lambda r: len(r['name']), axis=1)
             return df
@@ -468,8 +473,15 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
             [len(d[0]) for d in data if d[1] > 18]
         )
 
-        #  profile estimator
-        df_fit = pipeline.fit(df)
+        normalizer_path = os.path.join(self.path, 'normalizer.pickle')
+        twos_path = os.path.join(self.path, 'twos.pickle')
+
+        data_ = {
+            'second-stage/step_normalize/normalizer/writer/path': normalizer_path,
+            'second-stage/step_normalize/twos/writer/path': twos_path
+        }
+
+        df_fit = pipeline.fit(df, data_)
 
         self.assertListEqual(df_fit.values.tolist(), df_run.values.tolist())
 
@@ -487,3 +499,4 @@ class TestDependencyManagerThroughMainNodeDecorator(unittest.TestCase):
                 pickle.load(f),
                 [2 + df_fit.shape[0]] * len([d for d in data if d[1] > 18])
             )
+

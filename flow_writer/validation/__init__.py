@@ -1,5 +1,4 @@
 import json
-from pprint import pprint
 from flow_writer.validation.exceptions import SignalNotValid
 
 
@@ -10,11 +9,12 @@ def validate_input_signal(validations, df, f):
 
     The signal needs to be extracted from the kwargs of the curried function.
     We expect the signal to be present in kwargs with the 'df' key
-    'f' is the callable object in case we need to access meta fields
+    'fobj' is the callable object in case we need to access meta fields
 
     In case of failure, a 'SignalNotValid' exception is thrown, breaking the execution of the pipeline
     This exception can be used to send errors invalid data through error channels
     """
+
     if callable(validations):
         validations = [validations]
 
@@ -28,7 +28,7 @@ def validate_input_signal(validations, df, f):
         msg = {
             "message": "Signal failed the validation check",
             "failed validation": "'{}', nth validation '{}'".format(val_name, val_pos),
-            "at _node": "step '{}'".format(step_name)
+            "at node": "step '{}'".format(step_name)
         }
 
         print('\n' + json.dumps(msg, indent=4))
@@ -36,5 +36,5 @@ def validate_input_signal(validations, df, f):
         raise SignalNotValid({
             "message": "Signal failed the validation check",
             "failed validation": "'{}', nth validation '{}'".format(val_name, val_pos),
-            "at _node": "step '{}'".format(step_name)
+            "at node": "step '{}'".format(step_name)
         })

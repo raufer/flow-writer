@@ -2,9 +2,10 @@ import unittest
 
 from nose.tools import raises
 
-from flow_writer import Pipeline
-from flow_writer import Stage
-from flow_writer import node
+from flow_writer.abstraction.pipeline import Pipeline
+from flow_writer.abstraction.stage import Stage
+from flow_writer.ops.function_ops import cur, curr, closed_bindings, get_closed_variables
+from flow_writer.abstraction import pipeline_step
 
 
 class TestDataFlowAbstraction(unittest.TestCase):
@@ -25,25 +26,25 @@ class TestDataFlowAbstraction(unittest.TestCase):
 
     def test_dataflow_copy_descriptions(self):
         """
-        'copy_dataflow' should extract the necessary fields to inject in the newly created derived flow_writer
+        'copy_dataflow' should extract the necessary fields to inject in the newly created derived flow
         """
-        @node()
+        @pipeline_step()
         def step_a(df, tokenize):
             return df
 
-        @node()
+        @pipeline_step()
         def step_b(df, interpolate):
             return df
 
-        @node()
+        @pipeline_step()
         def step_c(df, groupby):
             return df
 
-        @node()
+        @pipeline_step()
         def step_d(df, keep_source, threshold):
             return df
 
-        @node()
+        @pipeline_step()
         def step_e(df, lookup):
             return df
 
@@ -74,26 +75,26 @@ class TestDataFlowAbstraction(unittest.TestCase):
 
     def test_dataflow_copy_side_effects(self):
         """
-        'copy_dataflow' should extract the necessary fields to inject in the newly created derived flow_writer
+        'copy_dataflow' should extract the necessary fields to inject in the newly created derived flow
         The side effects should also be coppied
         """
-        @node()
+        @pipeline_step()
         def step_a(df, tokenize):
             return df
 
-        @node()
+        @pipeline_step()
         def step_b(df, interpolate):
             return df
 
-        @node()
+        @pipeline_step()
         def step_c(df, groupby):
             return df
 
-        @node()
+        @pipeline_step()
         def step_d(df, keep_source, threshold):
             return df
 
-        @node()
+        @pipeline_step()
         def step_e(df, lookup):
             return df
 
@@ -118,7 +119,7 @@ class TestDataFlowAbstraction(unittest.TestCase):
 
         pipeline = pipeline.with_description('This is a description')
 
-        @node()
+        @pipeline_step()
         def write(df, path):
             return df
 

@@ -7,9 +7,9 @@ from nose.tools import raises
 from pyspark.sql.functions import length, log
 from pyspark.sql.types import IntegerType
 
-from flow_writer import node
-from flow_writer import Pipeline
-from flow_writer import Stage
+from flow_writer.abstraction import pipeline_step
+from flow_writer.abstraction.pipeline import Pipeline
+from flow_writer.abstraction.stage import Stage
 from flow_writer.validation.exceptions import SignalNotValid
 
 from tests import spark as spark
@@ -34,7 +34,7 @@ class TestFlowValidation(unittest.TestCase):
 
     def test_validation_checks_when_valid(self):
         """
-        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that _node.
+        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that node.
         The validation mechanism should accept a predicate, or a list of predicates, that the input signal should exhaustively respect.
         """
         data = [
@@ -51,22 +51,22 @@ class TestFlowValidation(unittest.TestCase):
         def has_age(df):
             return 'age' in df.schema.names
 
-        @node(val=has_age)
+        @pipeline_step(val=has_age)
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_transform(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 
@@ -87,7 +87,7 @@ class TestFlowValidation(unittest.TestCase):
     @raises(SignalNotValid)
     def test_validation_fails_when_invalid(self):
         """
-        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that _node.
+        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that node.
         The validation mechanism should accept a predicate, or a list of predicates, that the input signal should exhaustively respect.
         If the signal is not valid a SignalNotValid exception should be raised
         """
@@ -105,22 +105,22 @@ class TestFlowValidation(unittest.TestCase):
         def has_age(df):
             return 'age' in df.schema.names
 
-        @node(val=has_age)
+        @pipeline_step(val=has_age)
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_transform(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 
@@ -138,7 +138,7 @@ class TestFlowValidation(unittest.TestCase):
 
     def test_validation_checks_when_valid_using_lists(self):
         """
-        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that _node.
+        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that node.
         The validation mechanism should accept a predicate, or a list of predicates, that the input signal should exhaustively respect.
 
         We should be able to pass a list of validations
@@ -160,22 +160,22 @@ class TestFlowValidation(unittest.TestCase):
         def has_name(df):
             return 'name' in df.schema.names
 
-        @node(val=[has_age, has_name])
+        @pipeline_step(val=[has_age, has_name])
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_transform(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 
@@ -197,7 +197,7 @@ class TestFlowValidation(unittest.TestCase):
     @raises(SignalNotValid)
     def test_validation_fails_when_invalid_passing_a_list(self):
         """
-        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that _node.
+        When lifting a function to the data abstraction context, we should be able to add validations that will run immediately before the signal enters that node.
         The validation mechanism should accept a predicate, or a list of predicates, that the input signal should exhaustively respect.
         If the signal is not valid a SignalNotValid exception should be raised
         """
@@ -218,22 +218,22 @@ class TestFlowValidation(unittest.TestCase):
         def always_fail(df):
             return False
 
-        @node(val=[has_age, always_fail])
+        @pipeline_step(val=[has_age, always_fail])
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_transform(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 

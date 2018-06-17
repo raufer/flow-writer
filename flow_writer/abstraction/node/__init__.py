@@ -6,13 +6,13 @@ from abc import ABC, abstractmethod
 
 class Node(ABC):
     """
-    Abstract class defining an interface that supports all of the primitive operations needed for a generic dataflow _node
-    A “_node” is a processing element that takes inputs, does some operation and returns the results on its outputs.
+    Abstract class defining an interface that supports all of the primitive operations needed for a generic dataflow node
+    A “node” is a processing element that takes inputs, does some operation and returns the results on its outputs.
     It is a unit of computation. The actual computation doesn’t matter because dataflow is primarily concerned about moving data around.
 
-    The simplest dataflow _node has one input port and one output port
+    The simplest dataflow node has one input port and one output port
     It receives a computational unit 'f' that will perform the actual computation.
-    The _node never has the chance to look inside into this computation.
+    The node never has the chance to look inside into this computation.
     Nodes are often functional, but it is not required.
     """
 
@@ -41,6 +41,10 @@ class Node(ABC):
         """
         pass
 
+    @property
+    def registry(self):
+        return self.f.registry
+
 
 def _get_function_docs(f):
     """Extract the docs of a step (callable) for documentation purposes"""
@@ -57,3 +61,13 @@ def _get_function_docs(f):
 def extract_signal(args):
     """Extracts signal from the returned values of each step"""
     return args[0] if isinstance(args, (tuple, list)) else args
+
+
+def copy_node(node_x: Node, node_y: Node) -> Node:
+    """
+    Copies the attributes of 'node_y' to 'node_x'
+    To ensure an immutable programming model we must ensure a node is properly copied
+    """
+    node_x.location = str(node_y.location)
+    node_x.id = str(node_y.id)
+    return node_x

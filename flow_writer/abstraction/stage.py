@@ -5,14 +5,22 @@ from typing import Callable, Generator, Any, Dict
 
 from flow_writer.abstraction import _call_with_requested_args
 from flow_writer.abstraction.node import extract_signal
-from flow_writer.dependency_manager import _step_dependencies_sinks
-from flow_writer.abstraction.node.step import Step
-from flow_writer.ops.function_ops import closed_bindings
-from flow_writer.utils.print import color_text
 from flow_writer.abstraction.dataflow import DataFlowAbstraction, copy_dataflow
+from flow_writer.abstraction.node.step import Step
+
+from flow_writer.dependency_manager import _step_dependencies_sinks
+from flow_writer.dependency_manager.utils import generate_rebind_dict,  update_step_sink_dependencies
+from flow_writer.dependency_manager.validations import validate_required_arguments
+
+from flow_writer.ops.function_ops import closed_bindings
+
+from flow_writer.utils.print import color_text
 from flow_writer.utils.recipes import consume
 
+from flow_writer.logging import define_logging_file
+
 logger = logging.getLogger(__name__)
+define_logging_file(logger)
 
 
 class Stage(DataFlowAbstraction):
@@ -32,7 +40,7 @@ class Stage(DataFlowAbstraction):
     def __init__(self, name: str, *steps: Callable):
         """
         At construction time the user is allowed to pass just simple curried functions.
-        However, once we are in the data flow_writer context, pipelines cna be composed and thus we need to deal with this
+        However, once we are in the data flow context, pipelines cna be composed and thus we need to deal with this
         situation.
 
         In a way, we are emulating multiple constructors
@@ -138,24 +146,48 @@ class Stage(DataFlowAbstraction):
         stage = copy_dataflow(Stage(name, *rebounded_steps), self)
         return stage
 
-    def lock_dependencies(self):
+    def lock_dependencies(self, data=None, val_sink_args=True):
+        return self._lock_dependencies(data, val_source_args=True, val_sink_args=val_sink_args)
+
+    def _lock_dependencies(self, data=None, val_source_args=False, val_sink_args=False):
         """
+        Private version (just for internal use) :: should not be exposed to the user caller
+
         Locks all dependencies for which a callback was been registered.
         Returns a new Stage. This can be used to 'load' the pipeline with any external dependencies the steps may have.
+
+        'data' should be a dict with the values to inject into the functions that are managing each dependency.
+        data :: stage/step/step_arg/function/function_arg -> value
+
+        If 'val_sink_args' is set to True, we expect to resolve both the sink and source nodes
+
+        'val_source_args' and 'val_sink_args' are flags argument validation should be performed.
+        if true, an exception will be raised in some of the requirement arguments are not provided.
+
+        When calling this function, we can chose to turn out the validation concerning the sink/source handlers arguments
+        This should however just be used for internal use.
         """
+        if not data:
+            data = {}
 
-        def _rebind_args(entries):
-            return {entry.arg: entry.source() for entry in entries if entry.source}
+        _ = validate_required_arguments(self, data, val_source_args, val_sink_args)
 
-        steps_with_cache = [(step, step.registry.get("dependencies", list())) for step in self.steps]
+        #  handle source dependencies
+        source_rebind_dict = generate_rebind_dict(self, data, include_sink=False)
+        logger.info("Locking source nodes arguments: '{}'".format(source_rebind_dict))
+        newstage = self.rebind(source_rebind_dict)
 
-        rebind_dict = {step.name: _rebind_args(entries) for step, entries in steps_with_cache}
+        #  handle sink dependencies
+        write_rebind_dict = generate_rebind_dict(newstage, data, include_source=False)
+        logger.info("Locking sink nodes arguments: '{}'".format(write_rebind_dict))
+        newsteps = [
+            update_step_sink_dependencies(step, write_rebind_dict[step.name])
+            if step.name in write_rebind_dict else step
+            for step in newstage.steps
+        ]
 
-        rebind_dict = {k: v for k, v in rebind_dict.items() if v}
-
-        new_stage = self.rebind(rebind_dict)
-
-        return new_stage
+        newstage = copy_dataflow(Stage(newstage.name, *newsteps), newstage)
+        return newstage
 
     def run(self, df):
         """
@@ -248,16 +280,16 @@ class Stage(DataFlowAbstraction):
 def _run_gen(stage, steps, df, pre_sinks=None, post_sinks=None) -> Generator[Any, None, None]:
     """
     Lazy version of '_run'
-    Returns a generator that describes the computation of the whole data flow_writer.
+    Returns a generator that describes the computation of the whole data flow.
     There are three execution phases:
         - prerun
         - run
         - postrun
 
-    'run' is the main execution flow_writer, wehre the singal is propagated through the circuit.
+    'run' is the main execution flow, wehre the singal is propagated through the circuit.
     'prerun' and 'postrun' will invoke generic code to be run immediately before or after the execution of each step, respectively.
     They consider the list of functions received, 'pre_sinks' and 'post_sinks'
-    The nodes are sinks because the data flow_writer context does not look to their returned values, so they will be useful merely by their side effects.
+    The nodes are sinks because the data flow context does not look to their returned values, so they will be useful merely by their side effects.
     """
     if not steps:
         return df
@@ -291,26 +323,35 @@ def _run_sinks(sinks, **kwargs):
     'kwags' are assumed to be all the available at the respective execution time that '_run_sinks' is invoked.
     Each sink is required to ask (by name) the arguments it requires to be injected.
     """
+    logger.info("Calling: 'sink nodes'")
     for sink in sinks:
         _call_with_requested_args(sink, **kwargs)
 
 
 def _before_each_iteration(stage, step, df):
     """
-    Callback to run generic code immediately before the execution of each _node
+    Callback to run generic code immediately before the execution of each node
+    We can register input validation functions that will test the input signal
+    against some constraints before entering each node.
 
-    Additionally any input signal validations are also invoked
+    Moreover, registered generic sink nodes are also executed
     """
-    validate_signal = step.f.registry.get('input_validation')
-    validate_signal(df=df, f=step.f)
+    fvalidation = step.f.registry.get('input_validation', None)
+    if fvalidation:
+        logger.info("execution phase: 'validating signal'")
+        fvalidation(df, step.f)
 
     for f in stage.registry.get('before_each_step', []):
+        logger.info("execution phase: 'before each step'")
         _call_with_requested_args(f, stage=stage, step=step, df=df)
 
 
 def _after_each_iteration(stage, step, df):
-    """Callback to run generic code immediately after the execution of each _node"""
+    """
+    Callback to run generic code immediately after the execution of each node
+    """
     for f in stage.registry.get('after_each_step', []):
+        logger.info("execution phase: 'after each step'")
         _call_with_requested_args(f, stage=stage, step=step, df=df)
 
 

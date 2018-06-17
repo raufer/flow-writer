@@ -5,9 +5,9 @@ from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import lit, log, length
 
 from tests import spark
-from flow_writer import Stage
-from flow_writer import Pipeline
-from flow_writer import node
+from flow_writer.abstraction.stage import Stage
+from flow_writer.abstraction.pipeline import Pipeline
+from flow_writer.abstraction import pipeline_step
 
 
 class TestPipelineAbstraction(unittest.TestCase):
@@ -32,23 +32,23 @@ class TestPipelineAbstraction(unittest.TestCase):
         These will be composed into a execution abstraction that can be controlled by the caller.
         """
 
-        @node()
+        @pipeline_step()
         def step_a(df, tokenize):
             return df
 
-        @node()
+        @pipeline_step()
         def step_b(df, interpolate):
             return df
 
-        @node()
+        @pipeline_step()
         def step_c(df, groupby):
             return df
 
-        @node()
+        @pipeline_step()
         def step_d(df, keep_source, threshold):
             return df
 
-        @node()
+        @pipeline_step()
         def step_e(df, lookup):
             return df
 
@@ -91,19 +91,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age_str.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -141,19 +141,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age_str.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -193,19 +193,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age_str.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -254,19 +254,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age_str.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -305,19 +305,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age_str.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -363,11 +363,11 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
@@ -398,11 +398,11 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
@@ -434,11 +434,11 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
@@ -470,19 +470,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
-        @node()
+        @pipeline_step()
         def step_twoify(df):
             return df.withColumn("employed", lit(2))
 
-        @node()
+        @pipeline_step()
         def step_threeify(df):
             return df.withColumn("employed", lit(3))
 
@@ -522,19 +522,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
-        @node()
+        @pipeline_step()
         def step_twoify(df):
             return df.withColumn("employed", lit(2))
 
-        @node()
+        @pipeline_step()
         def step_threeify(df):
             return df.withColumn("employed", lit(3))
 
@@ -576,22 +576,22 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age", "score"])
 
-        @node()
+        @pipeline_step()
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_process_score(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(10.0, df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 
@@ -680,19 +680,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
-        @node()
+        @pipeline_step()
         def step_twoify(df):
             return df.withColumn("employed", df.employed + 1)
 
-        @node()
+        @pipeline_step()
         def step_threeify(df):
             return df.withColumn("employed", lit(3))
 
@@ -727,19 +727,19 @@ class TestPipelineAbstraction(unittest.TestCase):
 
         df = self.spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", df.employed + 1)
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", df.employed + 1)
 
-        @node()
+        @pipeline_step()
         def step_twoify(df):
             return df.withColumn("employed", df.employed + 1)
 
-        @node()
+        @pipeline_step()
         def step_threeify(df):
             return df.withColumn("employed", df.employed + 1)
 

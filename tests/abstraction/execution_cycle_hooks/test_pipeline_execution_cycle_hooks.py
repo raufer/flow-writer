@@ -1,10 +1,10 @@
 import unittest
 import pyspark.sql.types as T
 
-from flow_writer import node
-from flow_writer import Pipeline
+from flow_writer.abstraction import pipeline_step
+from flow_writer.abstraction.pipeline import Pipeline
 from tests import spark as spark
-from flow_writer import Stage
+from flow_writer.abstraction.stage import Stage
 
 
 class TestPipelineExecCycle(unittest.TestCase):
@@ -37,15 +37,15 @@ class TestPipelineExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -88,15 +88,15 @@ class TestPipelineExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -142,15 +142,15 @@ class TestPipelineExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -193,15 +193,15 @@ class TestPipelineExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -245,15 +245,15 @@ class TestPipelineExecCycle(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age_str", df.age.cast(T.StringType()))
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 

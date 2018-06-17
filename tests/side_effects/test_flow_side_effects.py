@@ -5,14 +5,14 @@ import shutil
 from pyspark.sql.functions import length, log
 from pyspark.sql.types import IntegerType
 
-from flow_writer import node
-from flow_writer import Pipeline
-from flow_writer import Stage
+from flow_writer.abstraction import pipeline_step
+from flow_writer.abstraction.pipeline import Pipeline
+from flow_writer.abstraction.stage import Stage
 
 from tests import spark as spark
 
 
-@node()
+@pipeline_step()
 def write_df(df, path, format, params=None):
     if not params:
         params = {
@@ -24,7 +24,7 @@ def write_df(df, path, format, params=None):
     return df
 
 
-@node()
+@pipeline_step()
 def read_df(spark, path, format, params=None):
     if not params:
         params = {
@@ -71,22 +71,22 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "score"])
 
-        @node()
+        @pipeline_step()
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_transform(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 
@@ -141,22 +141,22 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "score"])
 
-        @node()
+        @pipeline_step()
         def step_cast_to_int(df, column):
             return df.withColumn(column, df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_transform(df, method, scale_factor):
             if method == 'log':
                 return df.withColumn("score", log(df.score) * scale_factor)
             else:
                 return df.withColumn("score", df.score * scale_factor)
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_count_name_length(df):
             return df.withColumn("name_length", length(df.name))
 
@@ -208,19 +208,19 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -274,19 +274,19 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -341,19 +341,19 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -412,19 +412,19 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -481,19 +481,19 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 
@@ -553,19 +553,19 @@ class TestFlowSideEffects(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_stringify(df):
             return df.withColumn("age", df.age.cast(IntegerType()))
 
-        @node()
+        @pipeline_step()
         def step_just_adults(df, threshold):
             return df.filter(df.age > threshold)
 
-        @node()
+        @pipeline_step()
         def step_just_employed(df):
             return df.filter(df.employed > 0)
 
-        @node()
+        @pipeline_step()
         def step_rename(df):
             return df.withColumnRenamed('employed', 'is_employed')
 

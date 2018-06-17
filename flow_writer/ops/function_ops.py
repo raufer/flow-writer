@@ -2,12 +2,14 @@ import inspect
 import types
 from functools import wraps, partial
 
+from flow_writer.ops.exceptions import PositionalRebindNotAllowed
+
 
 def _call_original(func, args, kwargs):
     """
     check if original function has condition to be executed
     """
-    func_args = signature_args(func)
+    func_args = inspect_parameters(func)
     func_default_args = default_args(func)
     return len(set(func_args) - set(func_default_args) - set(kwargs)) <= len(args)
 
@@ -16,39 +18,41 @@ def _expected(f, kwargs):
     """
     Given a function 'f' and a dictionary with bound arguments,
     returns an ordered list of the arguments still needing a value
-
     >>> def f(a, b, c, d): return _
     >>> expected(f, {'a': 1, 'c': 2}) #  ['c', 'd]
     """
     return [a for a in signature_args(f) if a not in kwargs]
 
 
-def _call_hooks(kwargs, func):
+def genCur(func, execOnDemand=False):
     """
-    Call every registered hook, that will be probably just useful for its side effects
-    We assume that every call to be made as the following key format: format '__hook_*'
+    Generates a 'curried' version of a function.
 
-    At the end we need to remove all of the hooks to ensure they are not used in the original function call
+    We should be can bind arguments in any order we like and how many arguments we feel like at once.
+    When currying a function, we should take care of possible destructive effects that the currying process might
+    apply to the callable structure such as '__doc__' or '__name__'
+
+    'functool.wraps' is being used to assure this integrity, so that the currying is done in a non-destructive way.
+
+    'execOnDemand' is a flag indicating if the curried function execution should be deferred until an
+    explicit request of invocation is made, i.e. by calling the function with no arguments 'f()'.
+    In fact this increases the execution control by the caller.
+    Just allows a rebinding operation by keyword argument.
+    Since the execution of the function must be done explicitly, attempts to rebind arguments by position may raise an error
     """
-    pattern = '__hook_'
-    hooks = [v for k, v in kwargs.items() if pattern in k]
-
-    for h in hooks:
-        h(kwargs, func)
-
-    return {k: v for k, v in kwargs.items() if pattern not in k}
-
-
-def curry(func):
     signature = signature_args(func)
     defaultargs = default_args(func)
+
+    def _is_callable(elements):
+        """Check we have available the minimum required arguments defined in'func'"""
+        return sum(map(len, elements)) >= len(signature)
 
     @wraps(func)
     def f(*args, **kwargs):
 
         kwargs = {**defaultargs, **kwargs}
 
-        if sum(map(len, [args, kwargs])) >= len(signature):
+        if _is_callable([args, kwargs]) and not execOnDemand:
             return func(*args, **kwargs if len(args) < len(signature) else {})
 
         @wraps(func)
@@ -62,7 +66,13 @@ def curry(func):
                 **callkwargs
             }
 
-            if len(newstate) >= len(signature):
+            if execOnDemand and _is_callable([args, kwargs]) and len(callargs) > 0:
+                raise PositionalRebindNotAllowed
+
+            if any([
+                not execOnDemand and _is_callable([newstate]),
+                execOnDemand and sum(map(len, [callargs, callkwargs])) == 0 and _is_callable([newstate])
+            ]):
                 return func(**newstate)
 
             return f(**newstate)
@@ -78,6 +88,47 @@ def signature_args(callable):
     usage:
     >> l = lambda name: name.lower()
     >> signature_args(l) // ['name']
+    """
+    params = inspect.signature(callable).parameters
+    return list(params)
+
+
+def curr(f):
+    """Returns a curried version of 'f' and allows for argument rebinding"""
+    return genCur(f)
+
+
+def cur(f):
+    """
+    Returns a curried version of 'f' that is just invoked when an explicit request is made,
+    i.e. by calling the function with no arguments 'f()'
+    This increases the execution control by the caller.
+
+    Notes:
+    The curried version will not perform as expected when used out of context.
+    Just allows a rebinding operation by keyword argument.
+    Since the execution of the function must be done explicitly,
+    attempts to rebind arguments by position should raise an error
+
+    We call 'genCur(f)' and we execute it immediately genCur(f)().
+    If we do not do this, the input domain of genCur does not include functions of the type:
+    f :: Unit -> A
+    Why is this? When we call the curried version for the first time it enters the underlying 'g' function,
+    i.e. 'def g(*callargs, **callkwargs)' (check the source code)
+    This one can handle the type mentioned above whereas the 'previous level', i.e.  'def f(*args, **kwargs)', does not.
+    This is functionally similar to:
+        type Special = Unit -> a
+        typeOf(f) == Special ? genCur(f)() : genCur(f)
+    """
+    return genCur(f, execOnDemand=True)()
+
+
+def inspect_parameters(callable):
+    """
+    Returns the named arguments of the callable objects
+    usage:
+    >> l = lambda name: name.lower()
+    >> inspect_parameters(l) // ['name']
     """
     params = inspect.signature(callable).parameters
     return list(params)
@@ -126,7 +177,7 @@ def closed_bindings(f):
 
     We are however extracting it from the original function. Obviously giving precedence to more recent bindings of default arguments
     """
-    f_args = signature_args(f)
+    f_args = inspect_parameters(f)
 
     defaultargs = default_args(f)
 
@@ -147,8 +198,28 @@ def lazy(func):
     >>> r = f(1,2,3)
     >>> r() # 6
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         return partial(func, *args, **kwargs)
 
     return wrapper
+
+
+def copy_func(f, name=None):
+    """
+    return a function with same code, globals, defaults, closure, and
+    name (or provide a new name)
+
+    Note: do not use copy.copy/deepcopy to clone a function since the
+    callable object attributes are not properly handled
+    """
+    fn = types.FunctionType(
+        f.__code__,
+        f.__globals__,
+        name or f.__name__,
+        f.__defaults__,
+        f.__closure__
+    )
+    fn.__dict__.update(f.__dict__)
+    return fn

@@ -1,0 +1,2 @@
+class PositionalRebindNotAllowed(Exception):
+    pass

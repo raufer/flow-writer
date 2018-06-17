@@ -6,11 +6,13 @@ from typing import Generator, Any, Dict, Callable, Iterator
 from itertools import islice, chain
 
 from flow_writer.abstraction import _call_with_requested_args
+from flow_writer.logging import define_logging_file
 from flow_writer.utils.print import color_text
 from flow_writer.abstraction.dataflow import DataFlowAbstraction, copy_dataflow
 from flow_writer.utils.recipes import consume
 
 logger = logging.getLogger(__name__)
+define_logging_file(logger)
 
 
 class Pipeline(DataFlowAbstraction):
@@ -198,12 +200,18 @@ class Pipeline(DataFlowAbstraction):
         pipeline.registry['before_each_stage'] = [f] if callable(f) else f
         return pipeline
 
-    def lock_dependencies(self):
+    def lock_dependencies(self, data=None, val_source_args=True, val_sink_args=False):
         """
         Locks all dependencies for which a callback was been registered.
         Returns a new Pipeline. This can be used to 'load' the pipeline with any external dependencies the steps may have.
+
+        'data' should be a dict with the values to inject into the functions that are managing each dependency.
+        data :: stage/step/step_arg/function/function_arg -> value
+
+        'val_source_args' and 'val_sink_args' are flags argument validation should be performed.
+        if true, an exception will be raised in some of the requirement arguments are not provided.
         """
-        new_stages = [stage.lock_dependencies() for stage in self.stages]
+        new_stages = [stage._lock_dependencies(data, val_source_args, val_sink_args) for stage in self.stages]
         pipeline = copy_dataflow(Pipeline(self.name, *new_stages), self)
         return pipeline
 
@@ -307,30 +315,41 @@ class Pipeline(DataFlowAbstraction):
         result = consume(_run_gen(self, self.stages[:max(n, 0)], df)) or df
         return result
 
-    def run_iter_with_sinks(self, df):
+    def run_iter_with_sinks(self, df, data=None):
         """
         Runs the pipeline with the post sinks registered
         These sinks are with respect to the step dependencies.
         We will add the registered step dependencies handlers to the list of functions to run in 'post-run' phase.
 
-        We are setting "call='run_iter_with_sinks'" to tell the underlying stage objects to run the step dependencies managers registered
+        We are setting "call='run_iter_with_sinks'" to tell the underlying stage objects
+        to run the registered step dependencies managers
+
+        'data' should be a dict with the values to inject into the functions that are managing each dependency.
+        data :: stage/step/step_arg/function/function_arg -> value
+
+        If data is available it means we need to bind arguments in the writer function
+        This binding is expected to be partial.
         """
         logger.info("running Pipeline '{}' ...".format(self.name))
+        if data:
+            stages = [s._lock_dependencies(data, val_source_args=False, val_sink_args=True) for s in self.stages]
+            return _run_gen(self, stages, df, call='run_iter_with_sinks')
+
         return _run_gen(self, self.stages, df, call='run_iter_with_sinks')
 
-    def run_with_sinks(self, df):
+    def run_with_sinks(self, df, data=None):
         """
         Strict version of 'run_iter_with_sinks'
         """
         logger.info("running Pipeline '{}' ...".format(self.name))
-        return consume(self.run_iter_with_sinks(df))
+        return consume(self.run_iter_with_sinks(df, data))
 
-    def fit(self, df):
+    def fit(self, df, data=None):
         """
         An alias to 'pipeline.run_with_sinks'. Can be used to give more semantics to ML use cases
         """
         logger.info("fitting Pipeline '{}' ...".format(self.name))
-        return self.run_with_sinks(df)
+        return self.run_with_sinks(df, data)
 
     def __repr__(self):
         header = color_text("Pipeline: '{}'".format(self.name), 'red')
@@ -344,8 +363,11 @@ def _run_gen(pipeline, stages, df, call='run_iter') -> Generator[Any, None, None
     """
     Returns a generator that knows how to sequentially run through all of the computational steps
     'call' represents the underlying stage method that we want to be responsible for generating the intended computation
-    It defaults to 'run_iter' to simply run the main data flow_writer computations.
+    It defaults to 'run_iter' to simply run the main data flow computations.
     For instance, call='run_iter_with_sinks' will tell the underlying stage objects to run the step dependencies managers registered
+
+    'data' should be a dict with the values to inject into the functions that are managing each dependency.
+    data :: stage/step/step_arg/function/function_arg -> value
     """
     if not stages:
         return None
@@ -375,7 +397,7 @@ def _parse_input_nodes(l):
 
 def _parse_path(path):
     """
-    Splits the directory like _node 'path' into the different components
+    Splits the directory like node 'path' into the different components
     Returns a dict with all of the found components populated
     """
     if '/' in path:
@@ -394,12 +416,14 @@ def _parse_path(path):
 
 
 def _prerun(pipeline, stage, df):
-    """Hook to run generic code immediately before the execution of each _node"""
+    """Hook to run generic code immediately before the execution of each node"""
+    logger.info("Calling: 'before each stage'")
     for f in pipeline.registry.get('before_each_stage', []):
         _call_with_requested_args(f, pipeline=pipeline, stage=stage, df=df)
 
 
 def _postrun(pipeline, stage, df):
-    """Hook to run generic code immediately after the execution of each _node"""
+    """Hook to run generic code immediately after the execution of each node"""
+    logger.info("Calling: after each stage'")
     for f in pipeline.registry.get('after_each_stage', []):
         _call_with_requested_args(f, pipeline=pipeline, stage=stage, df=df)

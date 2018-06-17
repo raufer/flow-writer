@@ -3,7 +3,7 @@ from flow_writer.abstraction.node import Node
 
 class SideEffect(Node):
     """
-    This class represents a 'managed' side effect in a data flow_writer.
+    This class represents a 'managed' side effect in a data flow.
     This computational unit is expected to mutate the world in some way.
 
     Being explicit about side effects enhances modularity and creates opportunity to have a better grasp over the whole pipeline behaviour

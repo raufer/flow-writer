@@ -1,9 +1,9 @@
 import unittest
 
 from pyspark.sql.functions import lit
-from flow_writer import node
-from flow_writer import Pipeline
-from flow_writer import Stage
+from flow_writer.abstraction import pipeline_step
+from flow_writer.abstraction.pipeline import Pipeline
+from flow_writer.abstraction.stage import Stage
 from flow_writer.builders import inject_after, inject_before
 
 from tests import spark as spark
@@ -27,7 +27,7 @@ class TestInjectNodeInPipeline(unittest.TestCase):
 
     def test_inject_in_pipeline_after(self):
         """
-        'inject_in_pipeline_after' should insert an additional _node after the specified location
+        'inject_in_pipeline_after' should insert an additional node after the specified location
         """
         data = [
             ("Bob", "25", 2),
@@ -40,19 +40,19 @@ class TestInjectNodeInPipeline(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
-        @node()
+        @pipeline_step()
         def step_twoify(df):
             return df.withColumn("employed", lit(2))
 
-        @node()
+        @pipeline_step()
         def step_threeify(df):
             return df.withColumn("employed", lit(3))
 
@@ -66,7 +66,7 @@ class TestInjectNodeInPipeline(unittest.TestCase):
             stage_map_threes
         )
 
-        @node()
+        @pipeline_step()
         def step_onehundred(df):
             return df.withColumn("employed", lit(100))
 
@@ -86,7 +86,7 @@ class TestInjectNodeInPipeline(unittest.TestCase):
 
     def test_inject_in_pipeline_before(self):
         """
-        'inject_in_pipeline_before' should insert an additional _node before the specified location
+        'inject_in_pipeline_before' should insert an additional node before the specified location
         """
         data = [
             ("Bob", "25", 2),
@@ -99,19 +99,19 @@ class TestInjectNodeInPipeline(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
-        @node()
+        @pipeline_step()
         def step_twoify(df):
             return df.withColumn("employed", lit(2))
 
-        @node()
+        @pipeline_step()
         def step_threeify(df):
             return df.withColumn("employed", lit(3))
 
@@ -125,7 +125,7 @@ class TestInjectNodeInPipeline(unittest.TestCase):
                             stage_map_threes
                             )
 
-        @node()
+        @pipeline_step()
         def step_onehundred(df):
             return df.withColumn("employed", lit(100))
 
@@ -156,19 +156,19 @@ class TestInjectNodeInPipeline(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["name", "age_str", "employed"])
 
-        @node()
+        @pipeline_step()
         def step_zerify(df):
             return df.withColumn("employed", lit(0))
 
-        @node()
+        @pipeline_step()
         def step_onify(df):
             return df.withColumn("employed", lit(1))
 
-        @node()
+        @pipeline_step()
         def step_twoify(df):
             return df.withColumn("employed", lit(2))
 
-        @node()
+        @pipeline_step()
         def step_threeify(df):
             return df.withColumn("employed", lit(3))
 
@@ -184,7 +184,7 @@ class TestInjectNodeInPipeline(unittest.TestCase):
 
         pipeline = pipeline.with_description('DOC')
 
-        @node()
+        @pipeline_step()
         def step_onehundred(df):
             return df.withColumn("employed", lit(100))
 

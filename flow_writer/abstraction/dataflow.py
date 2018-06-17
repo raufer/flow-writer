@@ -24,7 +24,7 @@ class DataFlowAbstraction(ABC):
 
 def copy_dataflow(dataflow_x: DataFlowAbstraction, dataflow_y: DataFlowAbstraction) -> DataFlowAbstraction:
     """
-    The data flow_writer abstractions should be easy to use from the outside.
+    The data flow abstractions should be easy to use from the outside.
     It's very convenient to, at construct time, just pass a name a set of transformations
     DataFlow(name, step1, step2, ...)
 

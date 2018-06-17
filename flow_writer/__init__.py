@@ -3,9 +3,9 @@ import yaml
 import sys
 import os
 
-from flow_writer.abstraction import _node as node
-from flow_writer.abstraction.stage import Stage
-from flow_writer.abstraction.pipeline import Pipeline
+from flow_writer.properties import config as config
+from flow_writer.properties import config_test as config_test
+from flow_writer.version import __version__
 
 sys.setrecursionlimit(10000)
 
@@ -29,7 +29,4 @@ if hasattr(sys.stdout, 'isatty'):
         stream=sys.stdout, level=logging.DEBUG,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-
-with open(os.path.join(get_data('flow_writer/properties/config.yaml'))) as config_file:
-    config = yaml.load(config_file)
 

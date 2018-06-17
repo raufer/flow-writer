@@ -12,9 +12,3 @@ class Step(Node):
     def __init__(self, f, location=None):
         super(Step, self).__init__(f, location)
         self.id = "Step [{}]".format(next(Node._id_gen))
-
-    @property
-    def registry(self):
-        return self.f.registry
-
-

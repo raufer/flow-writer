@@ -2,7 +2,8 @@ import unittest
 
 from nose.tools import raises
 
-from flow_writer import node
+from flow_writer.ops.function_ops import cur, curr, closed_bindings, get_closed_variables
+from flow_writer.abstraction import pipeline_step
 
 
 class TestFlowOps(unittest.TestCase):
@@ -27,7 +28,7 @@ class TestFlowOps(unittest.TestCase):
         It should trigger as soon as all the elements are available.
         """
 
-        @node()
+        @pipeline_step()
         def power_of(base, exponent, add_at_end=0):
             return base ** exponent + add_at_end
 
@@ -44,7 +45,7 @@ class TestFlowOps(unittest.TestCase):
         apply to the callable structure such as '__doc__' or '__name__'
         """
 
-        @node()
+        @pipeline_step()
         def power_of(base, exponent, add_at_end=0):
             """doc: power of two"""
             return base ** exponent + add_at_end
@@ -53,3 +54,4 @@ class TestFlowOps(unittest.TestCase):
 
         self.assertEqual(power_of_two.__name__, power_of.__name__)
         self.assertEqual(power_of_two.__doc__, power_of.__doc__)
+

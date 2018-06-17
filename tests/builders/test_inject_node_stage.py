@@ -1,8 +1,8 @@
 import unittest
 
 from pyspark.sql.functions import lit
-from flow_writer import node
-from flow_writer import Stage
+from flow_writer.abstraction import pipeline_step
+from flow_writer.abstraction.stage import Stage
 from flow_writer.builders import inject_after, inject_before
 
 from tests import spark as spark
@@ -26,7 +26,7 @@ class TestInjectNodeInStage(unittest.TestCase):
 
     def test_inject_in_stage_after(self):
         """
-        'inject_in_stage_after' should insert an additional _node after the specified location
+        'inject_in_stage_after' should insert an additional node after the specified location
         """
         data = [
             ("Allowed", 71, 192),
@@ -41,17 +41,17 @@ class TestInjectNodeInStage(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["dvc_action", "url_length", "LengthBytes"])
 
-        @node()
+        @pipeline_step()
         def step_scale_url_length(df, mul_factor=3):
             df = df.withColumn("url_length_scaled", df.url_length * mul_factor)
             return df
 
-        @node()
+        @pipeline_step()
         def step_filter_small_packets(df, column, threshold):
             df = df.filter(df[column] >= threshold)
             return df
 
-        @node()
+        @pipeline_step()
         def step_add_ones(df):
             df = df.withColumn("ones", lit(1))
             return df
@@ -79,7 +79,7 @@ class TestInjectNodeInStage(unittest.TestCase):
 
     def test_inject_in_stage_before(self):
         """
-        'inject_in_stage_before' should insert an additional _node before the specified location
+        'inject_in_stage_before' should insert an additional node before the specified location
         """
         data = [
             ("Allowed", 71, 192),
@@ -94,17 +94,17 @@ class TestInjectNodeInStage(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["dvc_action", "url_length", "LengthBytes"])
 
-        @node()
+        @pipeline_step()
         def step_scale_url_length(df, mul_factor=3):
             df = df.withColumn("url_length_scaled", df.url_length * mul_factor)
             return df
 
-        @node()
+        @pipeline_step()
         def step_filter_small_packets(df, column, threshold):
             df = df.filter(df[column] >= threshold)
             return df
 
-        @node()
+        @pipeline_step()
         def step_add_ones(df):
             df = df.withColumn("ones", lit(1))
             return df
@@ -152,17 +152,17 @@ class TestInjectNodeInStage(unittest.TestCase):
 
         df = spark.createDataFrame(data, ["dvc_action", "url_length", "LengthBytes"])
 
-        @node()
+        @pipeline_step()
         def step_scale_url_length(df, mul_factor=3):
             df = df.withColumn("url_length_scaled", df.url_length * mul_factor)
             return df
 
-        @node()
+        @pipeline_step()
         def step_filter_small_packets(df, column, threshold):
             df = df.filter(df[column] >= threshold)
             return df
 
-        @node()
+        @pipeline_step()
         def step_add_ones(df):
             df = df.withColumn("ones", lit(1))
             return df

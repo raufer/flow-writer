@@ -1,10 +1,16 @@
+import logging
+
 from copy import deepcopy
 from typing import Callable
 from functools import wraps, partial
+from pandas import DataFrame
 
+from flow_writer.abstraction.dataflow import DataFlowAbstraction
 from flow_writer.dependency_manager import dependency_manager
-from flow_writer.ops.function_ops import signature_args, curry
+from flow_writer.ops.function_ops import cur, curr, inspect_parameters
 from flow_writer.validation import validate_input_signal
+
+logger = logging.getLogger(__name__)
 
 
 def _extended_wraps(func, wrapper):
@@ -18,7 +24,7 @@ def _extended_wraps(func, wrapper):
     return new_func
 
 
-def _node(val=None, dm=None) -> Callable:
+def pipeline_step(val=None, dm=None, allow_rebinding=True) -> Callable:
     """
     Decorator to signal the fact that 'func' is to be used as a step in a data abstraction.
     It returns a curried version of it, which will be run when the curried version is passed
@@ -33,17 +39,17 @@ def _node(val=None, dm=None) -> Callable:
     By default rebinding of arguments is allowed, but can be controlled with the 'allow_rebind' flag
 
     usage:
-    >>> @node()
+    >>> @pipeline_step()
     >>> def step(df: Signal, *pars) -> Signal
 
     >>> def has_age_col(df):
     >>>		return 'age' in df.columns
-    >>> @node(val=has_age_col)
+    >>> @pipeline_step(val=has_age_col)
     >>> def step(df: Signal, *pars) -> Signal
 
     >>> dependencies = {"tokenizer": [loader(tokenizer_path), writer(tokenizer_path)]}
     >>>
-    >>> @node(dm=dependencies)
+    >>> @pipeline_step(dm=dependencies)
     >>> def step(df, tokenizer)
     """
 
@@ -51,18 +57,22 @@ def _node(val=None, dm=None) -> Callable:
 
         func = _initialize_registry(func)
 
-        func = _register_input_validation(func, val)
-
         if dm:
             func = dependency_manager(dm)(func)
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            new_func = _extended_wraps(func, wrapper)
+
             #  add hooks to be called at execution time
             #  one for input signal validations
-            # kwargs['__hook_input_validation'] = partial(validate_input_signal, val or [])
-            new_func = _extended_wraps(func, wrapper)
-            return curry(new_func)(*args, **kwargs)
+            fvalidation = partial(validate_input_signal, val or [])
+            new_func = _register_function(fvalidation, new_func, "input_validation")
+
+            if allow_rebinding:
+                return curr(new_func)(*args, **kwargs)
+            else:
+                return cur(new_func)(*args, **kwargs)
 
         return wrapper
 
@@ -71,30 +81,47 @@ def _node(val=None, dm=None) -> Callable:
 
 def _call_with_requested_args(f, **kws):
     """Invoke 'f' using the arguments requested by it that should be available on 'kws'"""
-    args_requested = signature_args(f)
+    args_requested = inspect_parameters(f)
     fkws = {arg: kws[arg] for arg in args_requested if arg in kws}
+    logger.info("Calling '{}' with '{}'".format(f.__name__, _pretty_logging(fkws)))
+    logger.debug("Calling '{}' with '{}'".format(f.__name__, fkws))
     f(**fkws)
 
 
-def _initialize_registry(func):
+def _initialize_registry(f):
     """
-    Initializes a registry attribute on the callable 'func'
-    This is useful to store callbacks that will be executed at
-    different moments during the execution workflow
+    Initializes a "registry" on the callable "f".
+    This serves as a registry of functions that will act as sink
+    nodes that will run at specific moments of the execution workflow
     """
-    g = deepcopy(func)
-    if not hasattr(g, 'registry'):
-        g.registry = {}
-    return g
+    if not hasattr(f, 'registry'):
+        f.registry = {}
+    return f
 
 
-def _register_input_validation(func, validations):
+def _register_function(f, on, namespace):
     """
-    Registers user defined callbacks 'validations' that serve as constraints that
-    the input signal must respect.
-    In case any of the constraints is violated, an exception is raised
+    Register a function 'f' on a callable object 'on' in the requested 'namespace'
     """
-    g = deepcopy(func)
-    g.registry['input_validation'] = partial(validate_input_signal, validations or [])
-    return g
+    on.registry[namespace] = f
+    return on
 
+
+def _pretty_logging(data):
+    """
+    Returns the dictionary 'data' with a suitable form for logging
+    """
+    def _picker(x):
+        if isinstance(x, DataFlowAbstraction):
+            return x.name
+
+        elif isinstance(x, DataFrame):
+            return "pd.DataFrame({})".format(str(x.columns))
+
+        elif isinstance(x, tuple):
+            return (_picker(i) for i in x)
+
+        else:
+            return x
+
+    return {k: _picker(v) for k, v in data.items()}

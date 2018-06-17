@@ -6,7 +6,7 @@ from flow_writer.abstraction.node import Node
 
 def inject_after(dataflow, node, location=None):
     """
-    Returns a new DFA with the new the addition of a new _node injected after 'name'
+    Returns a new DFA with the new the addition of a new node injected after 'name'
     Name is a 'Stage' or 'Step' name selector, also supporting a directory like form:
     eg 'STAGE A / STEP 1'
     """
@@ -21,7 +21,7 @@ def inject_after(dataflow, node, location=None):
 
 
 def _inject_in_stage_after(dataflow, node, location) -> (dfas.Stage, Node):
-    """Injects a new _node in a newly created Stage after the _node 'location'"""
+    """Injects a new node in a newly created Stage after the node 'location'"""
     node_index = dataflow.steps_map[location]
     steps = dataflow.steps[:node_index + 1] + [node] + dataflow.steps[node_index + 1:]
     stage = dfas.Stage(dataflow.name, *steps)
@@ -29,7 +29,7 @@ def _inject_in_stage_after(dataflow, node, location) -> (dfas.Stage, Node):
 
 
 def _inject_in_pipeline_after(dataflow, node, location) -> (dfap.Pipeline, Node):
-    """Injects a new _node in a newly created Pipeline after the _node specified by 'location'"""
+    """Injects a new node in a newly created Pipeline after the node specified by 'location'"""
     stage, step = location.strip().split('/')
     stage = stage.strip()
     step = step.strip()
@@ -46,7 +46,7 @@ def _inject_in_pipeline_after(dataflow, node, location) -> (dfap.Pipeline, Node)
 
 def inject_before(dataflow, node, location=None):
     """
-    Returns a new DFA with the new the addition of a new _node injected before 'name'
+    Returns a new DFA with the new the addition of a new node injected before 'name'
     Name is a 'Stage' or 'Step' name selector, also supporting a directory like form:
     eg 'STAGE A / STEP 1'
     """
@@ -61,7 +61,7 @@ def inject_before(dataflow, node, location=None):
 
 
 def _inject_in_stage_before(dataflow, node, location) -> (dfas.Stage, Node):
-    """Injects a new _node in before the _node specified by 'location' in a newly created Stage"""
+    """Injects a new node in before the node specified by 'location' in a newly created Stage"""
     node_index = dataflow.steps_map[location]
     steps = dataflow.steps[:node_index] + [node] + dataflow.steps[node_index:]
     stage = dfas.Stage(dataflow.name, *steps)
@@ -69,7 +69,7 @@ def _inject_in_stage_before(dataflow, node, location) -> (dfas.Stage, Node):
 
 
 def _inject_in_pipeline_before(dataflow, node, location) -> (dfap.Pipeline, Node):
-    """Injects a new _node in a newly created Pipeline before the _node specified by 'location'"""
+    """Injects a new node in a newly created Pipeline before the node specified by 'location'"""
     stage, step = location.strip().split('/')
     stage = stage.strip()
     step = step.strip()

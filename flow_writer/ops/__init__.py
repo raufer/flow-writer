@@ -12,7 +12,7 @@ def inspect_parameters(callable):
     Returns the named arguments of the callable objects
     usage:
     >> l = lambda name: name.lower()
-    >> signature_args(l) // ['name']
+    >> inspect_parameters(l) // ['name']
     """
     params = inspect.signature(callable).parameters
     return list(params)
