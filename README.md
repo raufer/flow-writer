@@ -1,4 +1,8 @@
 ## Flow Writer
+
+![Flow Writer](resources/flow-writer-icon.png)
+
+
 [![Build Status](https://travis-ci.org/raufer/flow-writer.svg?branch=master)](https://travis-ci.org/raufer/flow-writer)
 ### Proof of concept for constructing ML pipelines
 
