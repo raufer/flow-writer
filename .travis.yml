@@ -8,6 +8,7 @@ dist: trusty
 jdk:
   - openjdk8
 
+
 install:
   - "pip install -e . --upgrade"
   - "pip install -r requirements.txt"
