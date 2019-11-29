@@ -1,8 +1,12 @@
 language: python
-jdk: oraclejdk8
 
 python:
   - "3.6"
+
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
 
 install:
   - "pip install -e . --upgrade"
