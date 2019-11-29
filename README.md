@@ -1,7 +1,190 @@
-## Flow Writer
+# Flow Writer
 
 ![Flow Writer](resources/flow-writer-icon.png)
 
+Install via `pip`:
+
+```bash
+pip install git+https://github.com/raufer/flow-writer.git
+```
+
+## Basic Usage
+
+**Constructing ML pipelines**
+
+We’ll be making use of `pandas` and `scikit-learn` for this illustration. But first we need some data to work with:
+
+|    | name   |   age |   score | language   |   exam(min) | feedback-questionnaire   |
+|---:|:-------|------:|--------:|:-----------|------------:|:-------------------------|
+|  0 | Bob    |    30 |     100 | python     |         120 | AABB                     |
+|  1 | Joe    |    17 |     110 | haskell    |          90 | BACB                     |
+|  2 | Sue    |    29 |     170 | Python     |          90 | AABA                     |
+|  3 | Jay    |    20 |     119 | JAVA       |         110 | BBCC                     |
+|  4 | Tom    |    38 |     156 | java       |         100 | ACCB                     |
+
+Let’s suppose this is the data available for a recruitment process. The data needs to be cleaned and some features extracted. We’ll be in charge of assembling a transformation pipeline to prepare this data for model scoring. The transformations will consist of some simple data cleaning tasks along and some steps to extract features from numerical data as well as from text data.
+
+For now we have two requirements:
+
+- We want to express our transformations in their natural form, as functions, without a need to wrap them in some class.
+
+- Logically related transformation steps should be allowed to be replaced by an abstraction that represents their composition.
+
+First, we need a way of lifting a function to our dataflow context. Much in the way as the TransformerMixin and Transformer traits fulfil the contract requirements to create pipelines in scikit-learn and spark, respectively. We want to be able to do it by means of a just a decorator.
+Our pipeline will start with two simple cleaning steps.
+
+```python
+from flow_writer.abstraction import pipeline_step
+
+
+@pipeline_step()
+def step_lowercase(df, col):
+    """
+    Converts all the strings of 'col' to lowercase.
+    """
+    df.loc[:, col] = df.language.map(str.lower)
+    return df
+
+
+@pipeline_step()
+def step_filter_numeric(df, col, threshold):
+    """
+    Filters all rows whose value in 'col' < 'threshold'
+    """
+    return df[df[col] > threshold]
+```
+We lift the functions by marking them with `pipeline_step`. Furthermore the decorator shouldn’t be destructive, i.e. the function is to be used exactly in the same way outside of our context.
+
+Then we have two steps that extract features from text data:
+
+```python
+@pipeline_step()
+def step_dummify(df, col, outputcol, sparse=False):
+    """
+    Binarize labels in a one-vs-all fashion.
+    By default the return is given in a dense represententation.
+    If a sparse representation is required, set sparse='True'
+    """
+    enc = LabelBinarizer(sparse_output=sparse)
+    enc.fit(df[col])
+    df.loc[:, outputcol] = pd.Series(map(str, enc.transform(df[col])))
+    return df
+
+
+@pipeline_step()
+def setp_satisfaction_percentage(df, col, outputcol):
+    """
+    A satisfatory answer is assumed by a "A" or a "B"
+    "C" represents an unsatisfactory asnwer.
+    perc = ["A" || "B"] / # questions
+    """
+    df.loc[:, outputcol] = df[col].apply(lambda x: len(x.replace("C", ""))/len(x))
+    return df
+```
+
+To finish we address the numerical columns with two more steps:
+
+```python
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+
+
+@pipeline_step()
+def step_standard_scale(df, col, outputcol, with_mean=True, with_std=True):
+    """
+    Standardize features by removing the mean and scaling to unit variance of 'col'
+
+    Standardization of a dataset is a common requirement for many machine learning estimators:
+    they might behave badly if the individual feature do not more or less look like standard normally distributed data
+    (e.g. Gaussian with 0 mean and unit variance).
+
+    'with_mean': If True, center the data before scaling.
+    'with_stf': If True, scale the data to unit variance (or equivalently, unit standard deviation).
+    """
+    scaler = StandardScaler(with_mean=with_mean, with_std=with_std)
+    scaler.fit(df[col].reshape(-1, 1))
+    df.loc[:, outputcol] = scaler.transform(df[col].reshape(-1, 1))
+    return df
+
+
+@pipeline_step()
+def step_scale_between_min_max(df, col, outputcol, a=0, b=1):
+    """
+    Transforms features by scaling each feature to a given range.
+    The range to scale is given by ['a', 'b]. Default [0, 1].
+    """
+    scaler = MinMaxScaler(feature_range=(a, b))
+    scaler.fit(df[col].reshape(-1, 1))
+    df.loc[:, outputcol] = scaler.transform(df[col].reshape(-1, 1))
+    return df
+```
+
+To bundle together a set of logically related steps we need something like a `Stage` abstraction, to be constructed in the following way:
+
+```python
+stage_cleaning = Stage("cleaning-stage",
+    step_dummify(col="language"),
+    step_filter_numeric(col="age", threshold=18)
+)
+```
+
+Notice that we are making use of a *curry* operator. We are locking the parameters that parameterize the behaviour of each step but we are leaving the data signal `df` as a free variable that will have its value injected at the proper time.
+
+The remaining two stages:
+
+```python
+stage_text_features = Stage("process-text-features",
+    step_lowercase(col="language")(outputcol="language-vec")(sparse=False),
+    setp_satisfaction_percentage(col="feedback-questionnaire", outputcol="satisfaction-percentage")
+)
+
+stage_numerical_features = Stage("process-numerical-features",
+    step_standard_scale(col="language", outputcol="language-scaled"),
+    step_scale_between_min_max(col="exam(min)", outputcol="exam(min)-scaled")(a=0, b=1)
+)
+```
+
+A second level of abstraction, `Pipeline`, is also allowed to improve semantics.
+
+```python
+pipeline = Pipeline("feature-extraction-pipeline",
+    stage_cleaning,
+    stage_text_features,
+    stage_numerical_features
+)
+```
+To trigger the execution of the pipeline, a data signal is needed. Moreover, the caller should have complete control over the execution workflow.
+
+We should be able to run it end to end:
+
+```python
+result = pipeline.run(df)
+```
+
+A specific step:
+
+```python
+df_result = pipeline.run_step(df, 'step_a')
+```
+
+Or run from the beginning until the specified location.
+
+```python
+df_result = pipeline.run_until(df, 'stage preprocess/step_a')
+```
+
+Every step should is performed in a *lazy* way; the computations are just actually performed when the result is needed. 
+This is effectively a generator representing the whole execution of the pipeline, step by step.
+
+```python
+gen = pipeline.run_iter_steps(df)
+
+df_intermediary_1 = next(gen)
+df_intermediary_2 = next(gen)
+df_intermediary_3 = next(gen)
+```
+
+Further documentation can be found [here](https://raufer.github.io/2018/02/08/poc-dataflow-for-ml/).
 
 [![Build Status](https://travis-ci.org/raufer/flow-writer.svg?branch=master)](https://travis-ci.org/raufer/flow-writer)
 ### Proof of concept for constructing ML pipelines
