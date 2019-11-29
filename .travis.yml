@@ -1,13 +1,12 @@
-language: java
-
-jdk:
-  - openjdk8
+language: python
 
 python:
   - "3.6"
 
+before_install:
+  - java install openjdk8
+
 install:
-  - "python --version"
   - "pip install -e . --upgrade"
   - "pip install -r requirements.txt"
 
