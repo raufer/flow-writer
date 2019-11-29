@@ -5,9 +5,8 @@ python:
 
 install:
   - "pip install -e . --upgrade"
-  - "pip install pipenv"
-  - "pipenv install --dev"
+  - "pip install -r requirments.txt"
 
 script:
   - echo "Running unit tests"
-  - "pipenv run nosetests -s -v tests/"
+  - "nosetests -s -v tests/"
