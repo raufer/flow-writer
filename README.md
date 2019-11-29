@@ -2,6 +2,8 @@
 
 ![Flow Writer](resources/flow-writer-icon.png)
 
+[![Build Status](https://travis-ci.org/raufer/flow-writer.svg?branch=master)](https://travis-ci.org/raufer/flow-writer)
+
 Install via `pip`:
 
 ```bash
@@ -10,7 +12,7 @@ pip install git+https://github.com/raufer/flow-writer.git
 
 ## Basic Usage
 
-**Constructing ML pipelines**
+**Example: Constructing ML pipelines**
 
 We’ll be making use of `pandas` and `scikit-learn` for this illustration. But first we need some data to work with:
 
@@ -186,7 +188,6 @@ df_intermediary_3 = next(gen)
 
 Further documentation can be found [here](https://raufer.github.io/2018/02/08/poc-dataflow-for-ml/).
 
-[![Build Status](https://travis-ci.org/raufer/flow-writer.svg?branch=master)](https://travis-ci.org/raufer/flow-writer)
 ### Proof of concept for constructing ML pipelines
 
 This repository serves as first trial for a proof of concept for what I believe to be a proper way of designing and managing machine learning pipelines.
