@@ -5,7 +5,7 @@ python:
 
 install:
   - "pip install -e . --upgrade"
-  - "pip install -r requirments.txt"
+  - "pip install -r requirements.txt"
 
 script:
   - echo "Running unit tests"
