@@ -9,8 +9,8 @@ jdk:
   - openjdk8
 
 install:
-  - "pip install -e -q . --upgrade"
-  - "pip install -r -q requirements.txt"
+  - "pip install -e . --upgrade"
+  - "pip install --quiet -r requirements.txt"
 
 script:
   - echo "Running unit tests"

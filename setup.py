@@ -9,5 +9,5 @@ setup(
     url='',
     include_package_data=True,
     zip_safe=False,
-    install_requires=['pyyaml', 'pyspark', 'numpy']
+    install_requires=[]
 )
