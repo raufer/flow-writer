@@ -10,7 +10,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        "pyyaml==3.12",
+        "pyyaml==5.4",
         "colorama==0.3.9",
         "termcolor==1.1.0"
     ]
